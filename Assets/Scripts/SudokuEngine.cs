@@ -1,8 +1,15 @@
 
+using System;
 using UnityEngine;
 
 public class SudokuEngine : MonoBehaviour
 {
+    #region Public Variables
+    
+    public static Action<Puzzle> PuzzleComplete;
+    
+    #endregion
+    
     #region Serialized Variables
     
     [SerializeField]
@@ -14,41 +21,31 @@ public class SudokuEngine : MonoBehaviour
 
     private void Start()
     {
-        FormatPuzzleString();
-        
-        Puzzle puzzle = new Puzzle();
-
-        for (int cellIndex = 0; cellIndex < PuzzleString.Length; ++cellIndex)
+        if (string.IsNullOrWhiteSpace(PuzzleString))
         {
-            if (cellIndex >= PuzzleString.Length)
-            {
-                break;
-            }
-            
-            char cellChar = PuzzleString[cellIndex];
-
-            if (cellChar == ' ' || cellChar == '0')
-            {
-                continue;
-            }
-            
-            puzzle.SetStarterValue(cellIndex, cellChar - '0');
+            return;
         }
-
-        puzzle.SolvePuzzle();
         
-        Debug.Log(puzzle.ToString());
+        SolvePuzzle(PuzzleString);
     }
     
     #endregion
     
-    #region Helper Functions
+    #region Public Functions
 
-    private void FormatPuzzleString()
+    public static void SolvePuzzle(string puzzleString)
     {
-        PuzzleString = PuzzleString.Replace("\n", "");
-        PuzzleString = PuzzleString.Replace("\r", "");
-        PuzzleString = PuzzleString.Replace("\t", "");
+        Puzzle puzzle = new Puzzle(puzzleString);
+
+        SolvePuzzle(puzzle);
+    }
+
+    public static void SolvePuzzle(Puzzle puzzle)
+    {
+        puzzle.SolvePuzzle();
+        
+        PuzzleComplete?.Invoke(puzzle);
+        Debug.Log(puzzle.ToString(true, false));
     }
     
     #endregion

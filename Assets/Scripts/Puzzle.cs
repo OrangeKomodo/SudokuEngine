@@ -25,6 +25,26 @@ public class Puzzle
 
     public Puzzle()
     {
+        CreateStandardPuzzle();
+    }
+
+    public Puzzle(string puzzleString)
+    {
+        CreateStandardPuzzle();
+        
+        if (string.IsNullOrWhiteSpace(puzzleString))
+        {
+            return;
+        }
+        
+        puzzleString = FormatPuzzleString(puzzleString);
+        PopulatePuzzleWithString(puzzleString);
+    }
+    
+    // TODO: Create a Constructor that takes a custom rule set type and creates a puzzle with custom 2D areas.
+
+    private void CreateStandardPuzzle()
+    {
         // Populate the 9 row, column, and square areas
         for (int areaIndex = 0; areaIndex < 9; ++areaIndex)
         {
@@ -53,22 +73,37 @@ public class Puzzle
             _twoDimensionalAreas[squareIndex].AddCell(_cells[cellIndex]);
         }
     }
+
+    private void PopulatePuzzleWithString(string puzzleString)
+    {
+        for (int cellIndex = 0; cellIndex < puzzleString.Length; ++cellIndex)
+        {
+            if (cellIndex >= puzzleString.Length)
+            {
+                break;
+            }
+            
+            char cellChar = puzzleString[cellIndex];
+
+            if (cellChar == ' ' || cellChar == '0' || cellChar == '?')
+            {
+                continue;
+            }
+            
+            SetStarterValue(cellIndex, cellChar - '0');
+        }
+    }
+
+    // Get rid of extraneous characters
+    private string FormatPuzzleString(string puzzleString)
+    {
+        return puzzleString.Replace("\n", "").Replace("\r", "").Replace("\t", "");
+    }
     
-    // TODO: Create a Constructor that takes a custom rule set type and creates a puzzle with custom 2D areas.
-        
     #endregion
     
     #region Public Functions
-
-    public void SetStarterValue(int cellIndex, int starterValue)
-    {
-        _cells[cellIndex].SetStarterValue(starterValue);
-
-        /*ResetAllDerivedValues();
-        stepCount = 0;
-        SolvePuzzle();*/
-    }
-
+    
     public bool SolvePuzzle()
     {
         do
@@ -152,17 +187,46 @@ public class Puzzle
         return CheckSolved();
     }
 
-    public override string ToString()
+    public override string ToString() => ToString(false, false);
+
+    public string ToString(bool printWithLineBreaks, bool useRichText)
     {
         StringBuilder puzzleResult = new StringBuilder();
 
         for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
         {
             Cell cell = _cells[cellIndex];
-            char cellChar = cell.IsSolved() ? (char)(cell.CellValue + 48) : '?';
-            puzzleResult.Append(cellChar.ToString());
+            char cellChar = (char)(cell.CellValue + '0');
 
-            if (cellIndex % 9 == 8)
+            string cellString = "";
+            switch (cell.State)
+            {
+                case CellState.Uncertain:
+                {
+                    cellString = useRichText ? Util.FormatUncertainChar('?') : "?";
+                    break;
+                }
+                case CellState.Grouped:
+                case CellState.Solved:
+                {
+                    cellString = useRichText ? Util.FormatSolvedChar(cellChar) : cellChar.ToString();
+                    break;
+                }
+                case CellState.Starter:
+                {
+                    cellString = useRichText ? Util.FormatStartChar(cellChar) : cellChar.ToString();
+                    break;
+                }
+                default:
+                {
+                    cellString = cellChar.ToString();
+                    break;
+                }
+            }
+            
+            puzzleResult.Append(cellString);
+
+            if (printWithLineBreaks && cellIndex % 9 == 8)
             {
                 puzzleResult.Append("\n");
             }
@@ -174,6 +238,15 @@ public class Puzzle
     #endregion
     
     #region Helper Functions
+
+    private void SetStarterValue(int cellIndex, int starterValue)
+    {
+        _cells[cellIndex].SetStarterValue(starterValue);
+
+        /*ResetAllDerivedValues();
+        stepCount = 0;
+        SolvePuzzle();*/
+    }
 
     private bool ImplementExistingDeductions()
     {
@@ -197,7 +270,9 @@ public class Puzzle
     {
         for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
         {
-            if (_cells[cellIndex].State != CellState.Starter && _cells[cellIndex].State != CellState.Solved)
+            Cell cell = _cells[cellIndex];
+            CellState cellState = cell.State;
+            if (cellState != CellState.Starter && cellState != CellState.Solved)
             {
                 return false;
             }
@@ -210,7 +285,8 @@ public class Puzzle
     {
         for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
         {
-            _cells[cellIndex].ResetDerivedValue();
+            Cell cell = _cells[cellIndex];
+            cell.ResetDerivedValue();
         }
     }
 
