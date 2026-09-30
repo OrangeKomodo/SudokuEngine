@@ -75,7 +75,7 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 # Recovery files
-/[Aa]ssets/[Rr]ecovery/*
+/[Aa]ssets/_[Rr]ecovery*
 
 # Rider .idea files
 /.idea/*
