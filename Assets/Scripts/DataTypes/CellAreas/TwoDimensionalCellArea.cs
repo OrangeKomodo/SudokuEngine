@@ -1,7 +1,7 @@
 
-using Abstracts;
+using DataTypes.Abstracts;
 
-namespace CellAreas
+namespace DataTypes.CellAreas
 {
     public class TwoDimensionalCellArea : ACellArea
     {

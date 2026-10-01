@@ -1,3 +1,5 @@
+using DataTypes;
+
 namespace Definitions
 {
     public struct SingleDeduction

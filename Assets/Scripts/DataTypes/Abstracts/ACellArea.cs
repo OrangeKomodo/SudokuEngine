@@ -1,13 +1,12 @@
-
 using System.Collections.Generic;
 using Definitions;
 
-namespace Abstracts
+namespace DataTypes.Abstracts
 {
     public abstract class ACellArea
     {
 
-        #region Protected Variables
+        #region Private Variables
 
         private AreaType _areaType;
         private int _areaIndex;

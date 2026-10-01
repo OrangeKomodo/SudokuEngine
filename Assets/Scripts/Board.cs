@@ -1,9 +1,9 @@
-using TMPro;
+using DataTypes;
 using UnityEngine;
 
 public class Board : MonoBehaviour
 {
-    [SerializeField] private TMP_Text PuzzleText;
+    [SerializeField] private CellComponent[] CellComponents; // <- It is imperative that these are in order in the Inspector
     
     private void Awake()
     {
@@ -17,6 +17,9 @@ public class Board : MonoBehaviour
 
     private void OnPuzzleComplete(Puzzle puzzle)
     {
-        PuzzleText.text = puzzle.ToString(true, true);
+        for (int cellIndex = 0; cellIndex < puzzle.Cells.Length; ++cellIndex)
+        {
+            CellComponents[cellIndex].DisplayCell(puzzle.Cells[cellIndex]);
+        }
     }
 }

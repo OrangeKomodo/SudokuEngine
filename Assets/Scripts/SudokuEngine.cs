@@ -1,5 +1,6 @@
 
 using System;
+using DataTypes;
 using UnityEngine;
 
 public class SudokuEngine : MonoBehaviour
@@ -12,8 +13,8 @@ public class SudokuEngine : MonoBehaviour
     
     #region Serialized Variables
     
-    [SerializeField]
-    private string PuzzleString;
+    //[SerializeField]
+    //private string PuzzleString;
     
     #endregion
     
@@ -21,12 +22,12 @@ public class SudokuEngine : MonoBehaviour
 
     private void Start()
     {
-        if (string.IsNullOrWhiteSpace(PuzzleString))
+        /*if (string.IsNullOrWhiteSpace(PuzzleString))
         {
             return;
         }
         
-        SolvePuzzle(PuzzleString);
+        SolvePuzzle(PuzzleString);*/
     }
     
     #endregion
@@ -45,7 +46,7 @@ public class SudokuEngine : MonoBehaviour
         puzzle.SolvePuzzle();
         
         PuzzleComplete?.Invoke(puzzle);
-        Debug.Log(puzzle.ToString(true, false));
+        Debug.Log(puzzle.ToString(true));
     }
     
     #endregion
