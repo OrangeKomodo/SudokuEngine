@@ -33,6 +33,8 @@ namespace SudokuExchange
                 PuzzleString = strings[1];
                 Difficulty = float.Parse(strings[3]);
             }
+
+            public override string ToString() => $"{ID} {PuzzleString}  {Difficulty}";
             
             public string ID;
             public string PuzzleString;
@@ -72,6 +74,9 @@ namespace SudokuExchange
         [SerializeField] private TMP_Text IDText;
         [SerializeField] private TMP_Text DifficultyText;
         
+        [SerializeField] private Button SavePuzzleButton;
+        [SerializeField] private Button LoadPuzzleButton;
+        
         private FileData _easyData;
         private FileData _mediumData;
         private FileData _hardData;
@@ -96,6 +101,9 @@ namespace SudokuExchange
             MediumPuzzleButton.onClick.AddListener(SolveMediumPuzzle);
             HardPuzzleButton.onClick.AddListener(SolveHardPuzzle);
             DiabolicalPuzzleButton.onClick.AddListener(SolveDiabolicalPuzzle);
+            
+            SavePuzzleButton.onClick.AddListener(SavePuzzle);
+            LoadPuzzleButton.onClick.AddListener(LoadPuzzle);
         }
         
         private void Start()
@@ -114,6 +122,9 @@ namespace SudokuExchange
             MediumPuzzleButton.onClick.RemoveAllListeners();
             HardPuzzleButton.onClick.RemoveAllListeners();
             DiabolicalPuzzleButton.onClick.RemoveAllListeners();
+            
+            SavePuzzleButton.onClick.RemoveAllListeners();
+            LoadPuzzleButton.onClick.RemoveAllListeners();
         }
 
         private void SolveEasyPuzzle() => SolveRandomPuzzle(_easyData.Data);
@@ -211,16 +222,45 @@ namespace SudokuExchange
             {
                 int randomIndex = Random.Range(0, puzzleCount);
                 randomData = data[randomIndex];
-            } while (string.IsNullOrWhiteSpace(randomData.PuzzleString));
+            }
+            while (string.IsNullOrWhiteSpace(randomData.PuzzleString));
             
             _currentData = randomData;
-            SudokuEngine.SolvePuzzle(randomData.PuzzleString);
+
+            IDText.text = _currentData.ID;
+            DifficultyText.text = _currentData.Difficulty.ToString(CultureInfo.CurrentCulture);
+            SudokuEngine.SolvePuzzle(_currentData.PuzzleString);
         }
 
         private void OnPuzzleComplete(Puzzle puzzle)
         {
+            // Nothing currently, but nice to have
+        }
+
+        private void SavePuzzle()
+        {
+            if (string.IsNullOrEmpty(_currentData.ID))
+            {
+                return;
+            }
+            
+            PlayerPrefs.SetString("SudokuExchange_SavedPuzzle", _currentData.ToString());
+        }
+
+        private void LoadPuzzle()
+        {
+            string savedPuzzleData = PlayerPrefs.GetString("SudokuExchange_SavedPuzzle", null);
+
+            if (string.IsNullOrEmpty(savedPuzzleData))
+            {
+                return;
+            }
+
+            _currentData = new SudokuExchangeData(savedPuzzleData.Split(" "));
+            
             IDText.text = _currentData.ID;
             DifficultyText.text = _currentData.Difficulty.ToString(CultureInfo.CurrentCulture);
+            SudokuEngine.SolvePuzzle(_currentData.PuzzleString);
         }
     }
 }
