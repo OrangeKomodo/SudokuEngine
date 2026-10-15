@@ -7,6 +7,7 @@ namespace Definitions
         Column,
         Square,
         Cell,
+        XWing,
         Custom
     }
 
@@ -21,18 +22,17 @@ namespace Definitions
     public enum GroupState
     {
         Ungrouped,
-        SingleGrouped,
-        DoubleGrouped,
-        TripleGrouped,
-        Custom
+        Grouped
     }
 
     public enum Cause
     {
-        Shape,
+        Area,
         Cell,
-        BondedGroup,
-        HiddenGroup
+        ConstrainedGroup,
+        NakedGroup,
+        HiddenGroup,
+        XWingGroup
     }
 
     public enum Index

@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using DataTypes.CellAreas;
+using DataTypes.Deductions;
 using Definitions;
 using UnityEngine;
 
@@ -17,7 +19,8 @@ namespace DataTypes
         private Cell[] _cells = new Cell[81];
     
         // Runtime variables
-        private List<SingleDeduction> _deductions = new List<SingleDeduction>();
+        private List<Deduction> _deductions = new List<Deduction>();
+        private Dictionary<string, bool> _groups = new Dictionary<string, bool>(); // This will be something more later
         private int _stepCount = 0;
     
         #endregion
@@ -67,17 +70,16 @@ namespace DataTypes
             // Populate the 81 cells, and connect them to the appropriate areas (and vice versa)
             for (int cellIndex = 0; cellIndex < 81; ++cellIndex)
             {
-                _cells[cellIndex] = new Cell();
-            
                 int rowIndex = StandardPuzzleSettings.GetRowIndex(cellIndex);
                 int columnIndex = StandardPuzzleSettings.GetColumnIndex(cellIndex);
                 int squareIndex = StandardPuzzleSettings.GetSquareIndex(cellIndex);
             
-                _cells[cellIndex].SetAreas(_rows[rowIndex], _columns[columnIndex], _twoDimensionalAreas[squareIndex]);
+                Cell cell = new Cell(cellIndex, _rows[rowIndex], _columns[columnIndex], _twoDimensionalAreas[squareIndex]);
+                _cells[cellIndex] = cell;
             
-                _rows[rowIndex].AddCell(_cells[cellIndex]);
-                _columns[columnIndex].AddCell(_cells[cellIndex]);
-                _twoDimensionalAreas[squareIndex].AddCell(_cells[cellIndex]);
+                _rows[rowIndex].AddCell(cell);
+                _columns[columnIndex].AddCell(cell);
+                _twoDimensionalAreas[squareIndex].AddCell(cell);
             }
         }
 
@@ -113,9 +115,11 @@ namespace DataTypes
     
         public bool SolvePuzzle()
         {
+            int passCount = 0;
+            
             do
             {
-                Debug.Log("Try Solve");
+                Debug.Log($"Solve Pass: {++passCount}");
             
                 // Check 2D areas
                 for (int tdaIndex = 0; tdaIndex < _twoDimensionalAreas.Length; ++tdaIndex)
@@ -160,35 +164,32 @@ namespace DataTypes
                 {
                     continue;
                 }
-            
-                /*// Check 2D areas for groups
-            for (int tdaIndex = 0; tdaIndex < twoDimensionalAreas.Length; ++tdaIndex)
-            {
-                
-            }
+                    
+                // Create Groups
+                for (int tdaIndex = 0; tdaIndex < _twoDimensionalAreas.Length; ++tdaIndex)
+                {
+                    _twoDimensionalAreas[tdaIndex].FindGroupsInArea(ref _deductions);
+                }
+                for (int rowIndex = 0; rowIndex < _rows.Length; ++rowIndex)
+                {
+                    _rows[rowIndex].FindGroupsInArea(ref _deductions);
+                }
+                for (int columnIndex = 0; columnIndex < _columns.Length; ++columnIndex)
+                {
+                    _columns[columnIndex].FindGroupsInArea(ref _deductions);
+                }
 
-            if (deductions.Count > 0)
-            {
-                continue;
-            }
-            
-            // Check rows for groups
-            for (int rowIndex = 0; rowIndex < rows.Length; ++rowIndex)
-            {
-                
-            }
+                /*if (_deductions.Count > 0)
+                {
+                    continue;
+                }
 
-            if (deductions.Count > 0)
-            {
-                continue;
-            }
-            
-            // Check columns for groups
-            for (int columnIndex = 0; columnIndex < columns.Length; ++columnIndex)
-            {
-                
-            }*/
-            
+                // Check for X-Wings
+                for (int columnIndex = 0; columnIndex < columns.Length; ++columnIndex)
+                {
+
+                }*/
+
             } while (ImplementExistingDeductions());
         
             return CheckSolved();
@@ -203,7 +204,7 @@ namespace DataTypes
             for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
             {
                 Cell cell = _cells[cellIndex];
-                char cellChar = cell.State == CellState.Solved ? (char)(cell.CellValue + '0') : '?';
+                char cellChar = cell.IsSolved() ? (char)(cell.CellValue + '0') : '?';
                 puzzleResult.Append(cellChar);
 
                 if (printWithLineBreaks && cellIndex % 9 == 8)
@@ -223,9 +224,9 @@ namespace DataTypes
         {
             _cells[cellIndex].SetStarterValue(starterValue);
 
-            /*ResetAllDerivedValues();
-        stepCount = 0;
-        SolvePuzzle();*/
+            /*ResetAllSolvedValues();
+            stepCount = 0;
+            SolvePuzzle();*/
         }
 
         private bool ImplementExistingDeductions()
@@ -234,16 +235,66 @@ namespace DataTypes
             {
                 return false;
             }
+
+            bool deductionUtilized = false;
         
             for (int deductionIndex = 0; deductionIndex < _deductions.Count; ++deductionIndex)
             {
-                SingleDeduction singleDeduction = _deductions[deductionIndex];
-                singleDeduction.Cell.SetSolvedValue(singleDeduction.SolvedNumber);
-                LogDeduction(singleDeduction);
+                Deduction deduction = _deductions[deductionIndex];
+
+                switch (deduction.Cause)
+                {
+                    case Cause.Area:
+                    case Cause.Cell:
+                    {
+                        SingleDeduction singleDeduction = deduction as SingleDeduction;
+
+                        if (singleDeduction == null)
+                        {
+                            throw new NullReferenceException("Somehow the single deduction is not a SingleDeduction");
+                        }
+                        
+                        singleDeduction.Cell.SetSolvedValue(singleDeduction.SolvedValue);
+                        deductionUtilized = true;
+                        break;
+                    }
+                    case Cause.NakedGroup:
+                    case Cause.HiddenGroup:
+                    {
+                        GroupDeduction groupDeduction = deduction as GroupDeduction;
+
+                        if (groupDeduction == null)
+                        {
+                            throw new NullReferenceException("Somehow the group deduction is not a GroupDeduction");
+                        }
+
+                        //Group newGroup = new Group(groupDeduction.Cells, groupDeduction.GroupedValues, groupDeduction.AreaType);
+                        if (_groups.ContainsKey(groupDeduction.GroupID))
+                        {
+                            continue;
+                        }
+
+                        _groups.Add(groupDeduction.GroupID, true);
+                        groupDeduction.CellArea.Obliterate(groupDeduction.Cells, groupDeduction.GroupedValues);
+                        deductionUtilized = true;
+                        break;
+                    }
+                    case Cause.ConstrainedGroup:
+                    case Cause.XWingGroup:
+                    default:
+                    {
+                        break;
+                    }
+                }
+
+                if (deductionUtilized)
+                {
+                    LogDeduction(deduction);
+                }
             }
         
             _deductions.Clear();
-            return true;
+            return deductionUtilized;
         }
 
         private bool CheckSolved()
@@ -261,31 +312,77 @@ namespace DataTypes
             return true;
         }
 
-        private void ResetAllDerivedValues()
+        private void ResetAllSolvedValues()
         {
             for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
             {
                 Cell cell = _cells[cellIndex];
-                cell.ResetDerivedValue();
+                cell.ResetSolvedValue();
             }
         }
 
-        private void LogDeduction(SingleDeduction singleDeduction)
+        private void LogDeduction(Deduction deduction)
         {
-            string log = $"{singleDeduction.SolvedNumber} was set at location ({singleDeduction.Cell.RowIndex}, {singleDeduction.Cell.ColumnIndex})";
-            string cause = null;
-        
-            switch (singleDeduction.Cause)
+            string log = "";
+            
+            if (deduction is SingleDeduction singleDeduction)
             {
-                case Cause.Shape:
-                    cause = $"as the only possibility within the {singleDeduction.AreaType}";
-                    break;
-                case Cause.Cell:
-                    cause = $"as the only possibility in the cell";
-                    break;
+                string cellLocation = $"was set at location ({singleDeduction.Cell.RowIndex}, {singleDeduction.Cell.ColumnIndex})";
+                
+                string cause = deduction.Cause switch
+                {
+                    Cause.Area => $"as the only possibility within the {singleDeduction.AreaType}",
+                    Cause.Cell => $"as the only possibility in the cell",
+                    _ => null
+                };
+
+                log = $"{singleDeduction.SolvedValue} {cellLocation} {cause}";
             }
-        
-            Debug.Log($"{++_stepCount}. {log} {cause}");
+            
+            if (deduction is GroupDeduction groupDeduction)
+            {
+                int groupCount = groupDeduction.Cells.Count;
+                
+                string cause = groupDeduction.Cause switch
+                {
+                    Cause.ConstrainedGroup => $"Constrained",
+                    Cause.NakedGroup => $"Naked",
+                    Cause.HiddenGroup => $"Hidden",
+                    Cause.XWingGroup => $"XWing",
+                    _ => null
+                };
+
+                string groupWord = groupCount switch
+                {
+                    2 => "Pair",
+                    3 => "Triplet",
+                    _ => "Group"
+                };
+
+                string values = $"involving values {Util.BoolArrayToString(groupDeduction.GroupedValues)}";
+
+                string[] cellLocationStrings = new string[groupCount];
+                for (int groupCellIndex = 0; groupCellIndex < groupCount; ++groupCellIndex)
+                {
+                    Cell cell = groupDeduction.Cells[groupCellIndex];
+
+                    //Temp until I can fix the underlying issues
+                    if (cell == null)
+                    {
+                        cellLocationStrings[groupCellIndex] = $"(?, ?)";
+                        continue;
+                    }
+                    
+                    cellLocationStrings[groupCellIndex] = $"({cell.RowIndex}, {cell.ColumnIndex})";
+                }
+                string locations = $"was found at locations {string.Join(", ", cellLocationStrings)}";
+
+                string area = $"within their shared {groupDeduction.AreaType}";
+                
+                log = $"{cause} {groupWord} {values} {locations} {area}";
+            }
+
+            Debug.Log($"{++_stepCount}. {log}");
         }
     
         #endregion

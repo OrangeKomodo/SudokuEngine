@@ -24,6 +24,7 @@ public class CellComponent : MonoBehaviour
     {
         switch (cell.State)
         {
+            case CellState.Grouped:
             case CellState.Uncertain:
             {
                 //CellText.text = "?";
@@ -32,10 +33,9 @@ public class CellComponent : MonoBehaviour
                 CellText.fontStyle = FontStyles.Normal;
                 break;
             }
-            case CellState.Grouped:
             case CellState.Solved:
             {
-                CellText.text = cell.CellValue.ToString();
+                CellText.text = ((int)cell.CellValue).ToString();
                 CellText.color = Util.SolvedCharColor;
                 CellText.fontStyle = FontStyles.Normal;
                 break;
@@ -43,7 +43,7 @@ public class CellComponent : MonoBehaviour
             case CellState.Starter:
             default:
             {
-                CellText.text = cell.CellValue.ToString();
+                CellText.text = ((int)cell.CellValue).ToString();
                 CellText.color = Util.StarterCharColor;
                 CellText.fontStyle = FontStyles.Bold;
                 break;

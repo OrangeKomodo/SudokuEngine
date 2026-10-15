@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using DataTypes.CellAreas;
+using DataTypes.Deductions;
 using Definitions;
 
 namespace DataTypes
@@ -7,9 +8,10 @@ namespace DataTypes
     public class Cell
     {
         #region Private Variables
-    
-        private int _cellValue = -1;
-        private bool[] _possibleValues = new bool[9] { true, true, true, true, true, true, true, true, true };
+
+        private int _cellIndex = -1;
+        private Value _cellValue = Value.None;
+        private bool[] _possibleValues = { true, true, true, true, true, true, true, true, true };
         private CellState _state = CellState.Uncertain;
         private GroupState _groupState = GroupState.Ungrouped;
     
@@ -21,7 +23,8 @@ namespace DataTypes
     
         #region Public Accessors
 
-        public int CellValue => _cellValue;
+        public int CellIndex => _cellIndex;
+        public Value CellValue => _cellValue;
         public bool[] PossibleValues => _possibleValues;
         public CellState State => _state;
         public GroupState GroupState => _groupState;
@@ -32,21 +35,28 @@ namespace DataTypes
         public OneDimensionalCellArea RowCellArea => _rowCellArea;
         public OneDimensionalCellArea ColumnCellArea => _columnCellArea;
         public TwoDimensionalCellArea TwoDimensionalCellArea => _twoDimensionalCellArea;
+
+        //public Action<Value> OnCellSolved;
     
         #endregion
         
-        #region Public Functions
+        #region Constructors
 
-        public void SetAreas(OneDimensionalCellArea rowCellArea, OneDimensionalCellArea columnCellArea, TwoDimensionalCellArea twoDimensionalCellArea)
+        public Cell(int cellIndex, OneDimensionalCellArea rowCellArea, OneDimensionalCellArea columnCellArea, TwoDimensionalCellArea twoDimensionalCellArea)
         {
+            _cellIndex = cellIndex;
             _rowCellArea = rowCellArea;
             _columnCellArea = columnCellArea;
             _twoDimensionalCellArea = twoDimensionalCellArea;
         }
+        
+        #endregion
+        
+        #region Public Functions
 
-        public bool IsSolved() => _state is CellState.Starter or CellState.Solved;
+        public bool IsSolved() => _state == CellState.Starter || _state == CellState.Solved;
 
-        public void CheckIfOnlyOnePossibility(ref List<SingleDeduction> deductions)
+        public void CheckIfOnlyOnePossibility(ref List<Deduction> deductions)
         {
             if (IsSolved())
             {
@@ -68,52 +78,59 @@ namespace DataTypes
                 return;
             }
         
-            SingleDeduction deduction = new SingleDeduction(this, (int)possibilityNumber, AreaType.Cell, Cause.Cell);
+            Deduction deduction = new SingleDeduction(this, (int)possibilityNumber, AreaType.Cell, Cause.Cell);
             deductions.Add(deduction);
         }
 
-        public void SetValueImpossible(int obliteratedNumber)
+        public void SetValueImpossible(Value obliteratedNumber)
         {
-            _possibleValues[obliteratedNumber - 1] = false;
+            _possibleValues[(int)obliteratedNumber - 1] = false;
         }
 
         public void SetStarterValue(int starterNumber)
         {
-            SetValue(starterNumber);
+            SetValue((Value)starterNumber);
             _state = CellState.Starter;
             _groupState = GroupState.Ungrouped;
         }
 
         public void SetSolvedValue(int solvedNumber)
         {
-            SetValue(solvedNumber);
+            SetValue((Value)solvedNumber);
             _state = CellState.Solved;
             _groupState = GroupState.Ungrouped;
+
+            //OnCellSolved.Invoke((Value)solvedNumber);
         }
 
-        public void ResetDerivedValue()
+        public void ResetSolvedValue()
         {
             if (_state == CellState.Starter)
             {
                 return;
             }
         
-            _cellValue = -1;
-            _possibleValues = new bool[9] { true, true, true, true, true, true, true, true, true }; 
+            _cellValue = Value.None;
+            _possibleValues = new bool[] { true, true, true, true, true, true, true, true, true };
             _state = CellState.Uncertain;
             _groupState = GroupState.Ungrouped;
+        }
+
+        public void EliminatePossibilities(bool[] newValues)
+        {
+            _possibleValues = Util.BoolArrayAnd(_possibleValues, newValues);
         }
         
         #endregion
     
         #region Helper Functions
 
-        private void SetValue(int number)
+        private void SetValue(Value number)
         {
             _cellValue = number;
-        
-            _possibleValues = new bool[9] { false, false, false, false, false, false, false, false, false };
-            _possibleValues[number - 1] = true;
+
+            _possibleValues = new bool[] { false, false, false, false, false, false, false, false, false };
+            _possibleValues[(int)number - 1] = true;
         
             _rowCellArea.Obliterate(number);
             _columnCellArea.Obliterate(number);
