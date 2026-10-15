@@ -29,8 +29,9 @@ namespace DataTypes
         public CellState State => _state;
         public GroupState GroupState => _groupState;
 
-        public int RowIndex => RowCellArea.AreaIndex;
-        public int ColumnIndex => ColumnCellArea.AreaIndex;
+        public int RowIndex => _rowCellArea.AreaIndex;
+        public int ColumnIndex => _columnCellArea.AreaIndex;
+        public int TwoDAreaIndex => _twoDimensionalCellArea.AreaIndex;
     
         public OneDimensionalCellArea RowCellArea => _rowCellArea;
         public OneDimensionalCellArea ColumnCellArea => _columnCellArea;
@@ -78,7 +79,7 @@ namespace DataTypes
                 return;
             }
         
-            Deduction deduction = new SingleDeduction(this, (int)possibilityNumber, AreaType.Cell, Cause.Cell);
+            Deduction deduction = new SingleDeduction(this, possibilityNumber, AreaType.Cell, Cause.Cell);
             deductions.Add(deduction);
         }
 
@@ -94,13 +95,13 @@ namespace DataTypes
             _groupState = GroupState.Ungrouped;
         }
 
-        public void SetSolvedValue(int solvedNumber)
+        public void SetSolvedValue(Value solvedNumber)
         {
-            SetValue((Value)solvedNumber);
+            SetValue(solvedNumber);
             _state = CellState.Solved;
             _groupState = GroupState.Ungrouped;
 
-            //OnCellSolved.Invoke((Value)solvedNumber);
+            //OnCellSolved.Invoke(solvedNumber);
         }
 
         public void ResetSolvedValue()

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using DataTypes.Abstracts;
 using DataTypes.CellAreas;
 using DataTypes.Deductions;
 using Definitions;
@@ -21,6 +22,7 @@ namespace DataTypes
         // Runtime variables
         private List<Deduction> _deductions = new List<Deduction>();
         private Dictionary<string, bool> _groups = new Dictionary<string, bool>(); // This will be something more later
+        private Dictionary<string, bool> _pointers = new Dictionary<string, bool>(); // This will be something more later
         private int _stepCount = 0;
     
         #endregion
@@ -164,6 +166,20 @@ namespace DataTypes
                 {
                     continue;
                 }
+                
+                // Find Pointers
+                for (int tdaIndex = 0; tdaIndex < _twoDimensionalAreas.Length; ++tdaIndex)
+                {
+                    _twoDimensionalAreas[tdaIndex].FindPointers(ref _deductions);
+                }
+                for (int rowIndex = 0; rowIndex < _rows.Length; ++rowIndex)
+                {
+                    _rows[rowIndex].FindPointers(ref _deductions);
+                }
+                for (int columnIndex = 0; columnIndex < _columns.Length; ++columnIndex)
+                {
+                    _columns[columnIndex].FindPointers(ref _deductions);
+                }
                     
                 // Create Groups
                 for (int tdaIndex = 0; tdaIndex < _twoDimensionalAreas.Length; ++tdaIndex)
@@ -258,6 +274,36 @@ namespace DataTypes
                         deductionUtilized = true;
                         break;
                     }
+                    case Cause.PointerGroup:
+                    {
+                        PointerDeduction pointerDeduction = deduction as PointerDeduction;
+
+                        if (pointerDeduction == null)
+                        {
+                            throw new NullReferenceException("Somehow the pointer deduction is not a PointerDeduction");
+                        }
+                        
+                        if (_pointers.ContainsKey(pointerDeduction.PointerID))
+                        {
+                            continue;
+                        }
+
+                        _pointers.Add(pointerDeduction.PointerID, true);
+
+                        Cell pointingCell = pointerDeduction.Cells[0];
+                        ACellArea pointedToCellArea = pointerDeduction.IntersectorAreaType switch
+                        {
+                            AreaType.Square => pointingCell.TwoDimensionalCellArea,
+                            AreaType.Custom => pointingCell.TwoDimensionalCellArea,
+                            AreaType.Row => pointingCell.RowCellArea,
+                            AreaType.Column => pointingCell.ColumnCellArea,
+                            _ => null
+                        };
+                        
+                        pointedToCellArea?.MarkPointedToCells(pointerDeduction.Cells, pointerDeduction.PointerValue);
+                        deductionUtilized = true;
+                        break;
+                    }
                     case Cause.NakedGroup:
                     case Cause.HiddenGroup:
                     {
@@ -275,7 +321,7 @@ namespace DataTypes
                         }
 
                         _groups.Add(groupDeduction.GroupID, true);
-                        groupDeduction.CellArea.Obliterate(groupDeduction.Cells, groupDeduction.GroupedValues);
+                        groupDeduction.CellArea.MarkGroupedCells(groupDeduction.Cells, groupDeduction.GroupedValues);
                         deductionUtilized = true;
                         break;
                     }
@@ -327,7 +373,9 @@ namespace DataTypes
             
             if (deduction is SingleDeduction singleDeduction)
             {
-                string cellLocation = $"was set at location ({singleDeduction.Cell.RowIndex}, {singleDeduction.Cell.ColumnIndex})";
+                string value = $"Value {(int)singleDeduction.SolvedValue}";
+                
+                string cellLocation = $"was set at location {GetLocationStringFromCell(singleDeduction.Cell)}";
                 
                 string cause = deduction.Cause switch
                 {
@@ -336,13 +384,33 @@ namespace DataTypes
                     _ => null
                 };
 
-                log = $"{singleDeduction.SolvedValue} {cellLocation} {cause}";
+                log = $"{value} {cellLocation} {cause}";
+            }
+
+            if (deduction is PointerDeduction pointerDeduction)
+            {
+                string groupWord = pointerDeduction.Cells.Count switch
+                {
+                    2 => "Pair",
+                    3 => "Triplet",
+                    _ => "Group"
+                };
+
+                string cause = $"A pointer {groupWord}";
+                
+                string value = $"involving Value {(int)pointerDeduction.PointerValue}";
+                
+                string locations = $"was found at locations {GetLocationStringFromCells(pointerDeduction.Cells)}";
+
+                string startingArea = $"starting from their shared {pointerDeduction.AreaType}";
+
+                string endingArea = $"pointing to their shared {pointerDeduction.IntersectorAreaType}";
+
+                log = $"{cause} {value} {locations} {startingArea} {endingArea}";
             }
             
             if (deduction is GroupDeduction groupDeduction)
             {
-                int groupCount = groupDeduction.Cells.Count;
-                
                 string cause = groupDeduction.Cause switch
                 {
                     Cause.ConstrainedGroup => $"Constrained",
@@ -352,7 +420,7 @@ namespace DataTypes
                     _ => null
                 };
 
-                string groupWord = groupCount switch
+                string groupWord = groupDeduction.Cells.Count switch
                 {
                     2 => "Pair",
                     3 => "Triplet",
@@ -360,22 +428,8 @@ namespace DataTypes
                 };
 
                 string values = $"involving values {Util.BoolArrayToString(groupDeduction.GroupedValues)}";
-
-                string[] cellLocationStrings = new string[groupCount];
-                for (int groupCellIndex = 0; groupCellIndex < groupCount; ++groupCellIndex)
-                {
-                    Cell cell = groupDeduction.Cells[groupCellIndex];
-
-                    //Temp until I can fix the underlying issues
-                    if (cell == null)
-                    {
-                        cellLocationStrings[groupCellIndex] = $"(?, ?)";
-                        continue;
-                    }
-                    
-                    cellLocationStrings[groupCellIndex] = $"({cell.RowIndex}, {cell.ColumnIndex})";
-                }
-                string locations = $"was found at locations {string.Join(", ", cellLocationStrings)}";
+                
+                string locations = $"was found at locations {GetLocationStringFromCells(groupDeduction.Cells)}";
 
                 string area = $"within their shared {groupDeduction.AreaType}";
                 
@@ -383,6 +437,21 @@ namespace DataTypes
             }
 
             Debug.Log($"{++_stepCount}. {log}");
+        }
+
+        private string GetLocationStringFromCell(Cell cell) => $"({cell.RowIndex}, {cell.ColumnIndex})";
+        
+        private string GetLocationStringFromCells(List<Cell> cells)
+        {
+            string[] locationStrings = new string[cells.Count];
+            
+            for (int cellIndex = 0; cellIndex < cells.Count; ++cellIndex)
+            {
+                Cell cell = cells[cellIndex];
+                locationStrings[cellIndex] = GetLocationStringFromCell(cell);
+            }
+
+            return string.Join(", ", locationStrings);
         }
     
         #endregion

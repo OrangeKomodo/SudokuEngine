@@ -8,7 +8,8 @@ namespace Definitions
         Square,
         Cell,
         XWing,
-        Custom
+        Custom,
+        None
     }
 
     public enum CellState
@@ -29,6 +30,7 @@ namespace Definitions
     {
         Area,
         Cell,
+        PointerGroup,
         ConstrainedGroup,
         NakedGroup,
         HiddenGroup,

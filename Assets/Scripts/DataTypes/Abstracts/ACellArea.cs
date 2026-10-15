@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DataTypes.CellAreas;
 using DataTypes.Deductions;
 using Definitions;
 
@@ -66,7 +67,22 @@ namespace DataTypes.Abstracts
             --_uncertainCellCount;
         }
 
-        public void Obliterate(List<Cell> groupedCells, bool[] values)
+        public void MarkPointedToCells(List<Cell> groupedCells, Value pointerValue)
+        {
+            for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
+            {
+                Cell cell = _cells[cellIndex];
+                
+                if (cell.IsSolved() || groupedCells.Contains(cell))
+                {
+                    continue;
+                }
+                
+                _cells[cellIndex].SetValueImpossible(pointerValue);
+            }
+        }
+
+        public void MarkGroupedCells(List<Cell> groupedCells, bool[] values)
         {
             for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
             {
@@ -118,8 +134,69 @@ namespace DataTypes.Abstracts
                 
                 Index positionOfSingle = numberLocations[numberIndex];
 
-                Deduction deduction = new SingleDeduction(Cells[(int)positionOfSingle], numberIndex + 1, _areaType, Cause.Area);
+                Deduction deduction = new SingleDeduction(Cells[(int)positionOfSingle], (Value)numberIndex + 1, _areaType, Cause.Area);
                 deductions.Add(deduction);
+            }
+        }
+
+        public void FindPointers(ref List<Deduction> deductions)
+        {
+            bool isTwoDArea = this is TwoDimensionalCellArea;
+            
+            for (Value value = Value.One; value <= Value.Nine; ++value)
+            {
+                bool[] valueLocations = GetValueLocations(value);
+                int valueInstanceCount = Util.BoolArrayCount(valueLocations);
+
+                if (valueInstanceCount > 3)
+                {
+                    continue;
+                }
+
+                List<Cell> cells = GetCellsAtLocations(valueLocations);
+
+                AreaType intersector = AreaType.None;
+
+                // No need for a for loop with so few possibilities
+                if (valueInstanceCount == 2)
+                {
+                    if (isTwoDArea && cells[0].RowIndex == cells[1].RowIndex)
+                    {
+                        intersector = AreaType.Row;
+                    }
+                    if (isTwoDArea && cells[0].ColumnIndex == cells[1].ColumnIndex)
+                    {
+                        intersector = AreaType.Column;
+                    }
+
+                    if (!isTwoDArea && cells[0].TwoDAreaIndex == cells[1].TwoDAreaIndex)
+                    {
+                        intersector = AreaType.Square;
+                    }
+                }
+
+                if (valueInstanceCount == 3)
+                {
+                    if (isTwoDArea && cells[0].RowIndex == cells[1].RowIndex && cells[0].RowIndex == cells[2].RowIndex)
+                    {
+                        intersector = AreaType.Row;
+                    }
+                    if (isTwoDArea && cells[0].ColumnIndex == cells[1].ColumnIndex && cells[0].ColumnIndex == cells[2].ColumnIndex)
+                    {
+                        intersector = AreaType.Column;
+                    }
+
+                    if (!isTwoDArea && cells[0].TwoDAreaIndex == cells[1].TwoDAreaIndex && cells[0].TwoDAreaIndex == cells[2].TwoDAreaIndex)
+                    {
+                        intersector = AreaType.Square;
+                    }
+                }
+
+                if (intersector != AreaType.None)
+                {
+                    Deduction deduction = new PointerDeduction(cells, value, _areaType, intersector, Cause.PointerGroup);
+                    deductions.Add(deduction);
+                }
             }
         }
 

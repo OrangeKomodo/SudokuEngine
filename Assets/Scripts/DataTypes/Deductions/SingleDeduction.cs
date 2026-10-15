@@ -5,9 +5,9 @@ namespace DataTypes.Deductions
     public class SingleDeduction : Deduction
     {
         public Cell Cell;
-        public int SolvedValue;
+        public Value SolvedValue;
 
-        public SingleDeduction(Cell cell, int solvedValue, AreaType areaType, Cause cause)
+        public SingleDeduction(Cell cell, Value solvedValue, AreaType areaType, Cause cause)
         {
             Cell = cell;
             SolvedValue = solvedValue;

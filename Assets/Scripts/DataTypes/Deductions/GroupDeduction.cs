@@ -19,11 +19,11 @@ namespace DataTypes.Deductions
             AreaType = areaType;
             Cause = cause;
 
-            // This just needs to be distinct
             GroupID = GenerateGroupID(cells);
         }
 
-        private string GenerateGroupID(List<Cell> cells)
+        // This just needs to be distinct and reproducible, not fancy
+        public static string GenerateGroupID(List<Cell> cells)
         {
             string output = "";
             
