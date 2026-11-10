@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
-using DataTypes.Abstracts;
-using DataTypes.CellAreas;
 using DataTypes.Deductions;
 using Definitions;
 using UnityEngine;
@@ -14,9 +12,9 @@ namespace DataTypes
         #region Private Variables
 
         // Compile-time variables
-        private OneDimensionalCellArea[] _rows = new OneDimensionalCellArea[9];
-        private OneDimensionalCellArea[] _columns = new OneDimensionalCellArea[9];
-        private TwoDimensionalCellArea[] _twoDimensionalAreas = new TwoDimensionalCellArea[9];
+        private CellArea[] _rows = new CellArea[9];
+        private CellArea[] _columns = new CellArea[9];
+        private CellArea[] _twoDimensionalAreas = new CellArea[9];
         private Cell[] _cells = new Cell[81];
     
         // Runtime variables
@@ -60,9 +58,9 @@ namespace DataTypes
             // Populate the 9 row, column, and square areas
             for (int areaIndex = 0; areaIndex < 9; ++areaIndex)
             {
-                _rows[areaIndex] = new OneDimensionalCellArea();
-                _columns[areaIndex] = new OneDimensionalCellArea();
-                _twoDimensionalAreas[areaIndex] = new TwoDimensionalCellArea();
+                _rows[areaIndex] = new CellArea();
+                _columns[areaIndex] = new CellArea();
+                _twoDimensionalAreas[areaIndex] = new CellArea();
             
                 _rows[areaIndex].PopulateData(AreaType.Row, areaIndex);
                 _columns[areaIndex].PopulateData(AreaType.Column, areaIndex);
@@ -291,7 +289,7 @@ namespace DataTypes
                         _pointers.Add(pointerDeduction.PointerID, true);
 
                         Cell pointingCell = pointerDeduction.Cells[0];
-                        ACellArea pointedToCellArea = pointerDeduction.IntersectorAreaType switch
+                        CellArea pointedToCellArea = pointerDeduction.IntersectorAreaType switch
                         {
                             AreaType.Square => pointingCell.TwoDimensionalCellArea,
                             AreaType.Custom => pointingCell.TwoDimensionalCellArea,

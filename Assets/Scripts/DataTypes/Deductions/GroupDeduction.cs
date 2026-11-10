@@ -1,17 +1,16 @@
 using System.Collections.Generic;
-using DataTypes.Abstracts;
 using Definitions;
 
 namespace DataTypes.Deductions
 {
     public class GroupDeduction : Deduction
     {
-        public ACellArea CellArea;
+        public CellArea CellArea;
         public List<Cell> Cells;
         public bool[] GroupedValues;
         public string GroupID;
         
-        public GroupDeduction(ACellArea cellArea, List<Cell> cells, bool[] groupedValues, AreaType areaType, Cause cause)
+        public GroupDeduction(CellArea cellArea, List<Cell> cells, bool[] groupedValues, AreaType areaType, Cause cause)
         {
             CellArea = cellArea;
             Cells = cells;

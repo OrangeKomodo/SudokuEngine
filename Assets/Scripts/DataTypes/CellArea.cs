@@ -1,11 +1,10 @@
 using System.Collections.Generic;
-using DataTypes.CellAreas;
 using DataTypes.Deductions;
 using Definitions;
 
-namespace DataTypes.Abstracts
+namespace DataTypes
 {
-    public abstract class ACellArea
+    public class CellArea
     {
         #region Private Variables
 
@@ -50,6 +49,8 @@ namespace DataTypes.Abstracts
 
             ++_uncertainCellCount;
         }
+
+        public bool Is2DimensionalArea() => _areaType is AreaType.Square or AreaType.Custom;
 
         public void Obliterate(Value solvedValue)
         {
@@ -141,7 +142,7 @@ namespace DataTypes.Abstracts
 
         public void FindPointers(ref List<Deduction> deductions)
         {
-            bool isTwoDArea = this is TwoDimensionalCellArea;
+            bool isTwoDArea = Is2DimensionalArea();
             
             for (Value value = Value.One; value <= Value.Nine; ++value)
             {

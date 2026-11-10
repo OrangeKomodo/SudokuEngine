@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using DataTypes.CellAreas;
 using DataTypes.Deductions;
 using Definitions;
 
@@ -15,9 +14,9 @@ namespace DataTypes
         private CellState _state = CellState.Uncertain;
         private GroupState _groupState = GroupState.Ungrouped;
     
-        private OneDimensionalCellArea _rowCellArea;
-        private OneDimensionalCellArea _columnCellArea;
-        private TwoDimensionalCellArea _twoDimensionalCellArea;
+        private CellArea _rowCellArea;
+        private CellArea _columnCellArea;
+        private CellArea _twoDimensionalCellArea;
     
         #endregion
     
@@ -33,9 +32,9 @@ namespace DataTypes
         public int ColumnIndex => _columnCellArea.AreaIndex;
         public int TwoDAreaIndex => _twoDimensionalCellArea.AreaIndex;
     
-        public OneDimensionalCellArea RowCellArea => _rowCellArea;
-        public OneDimensionalCellArea ColumnCellArea => _columnCellArea;
-        public TwoDimensionalCellArea TwoDimensionalCellArea => _twoDimensionalCellArea;
+        public CellArea RowCellArea => _rowCellArea;
+        public CellArea ColumnCellArea => _columnCellArea;
+        public CellArea TwoDimensionalCellArea => _twoDimensionalCellArea;
 
         //public Action<Value> OnCellSolved;
     
@@ -43,7 +42,7 @@ namespace DataTypes
         
         #region Constructors
 
-        public Cell(int cellIndex, OneDimensionalCellArea rowCellArea, OneDimensionalCellArea columnCellArea, TwoDimensionalCellArea twoDimensionalCellArea)
+        public Cell(int cellIndex, CellArea rowCellArea, CellArea columnCellArea, CellArea twoDimensionalCellArea)
         {
             _cellIndex = cellIndex;
             _rowCellArea = rowCellArea;

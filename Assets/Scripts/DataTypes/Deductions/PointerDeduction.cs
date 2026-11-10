@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using DataTypes.Abstracts;
 using Definitions;
 
 namespace DataTypes.Deductions
