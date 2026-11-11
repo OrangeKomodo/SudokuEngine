@@ -22,7 +22,7 @@ namespace DataTypes.Deductions
         }
 
         // This just needs to be distinct and reproducible, not fancy
-        public static string GenerateGroupID(List<Cell> cells)
+        private static string GenerateGroupID(List<Cell> cells)
         {
             string output = "";
             

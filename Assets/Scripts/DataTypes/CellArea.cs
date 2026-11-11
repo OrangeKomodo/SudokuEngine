@@ -250,14 +250,17 @@ namespace DataTypes
 
         private void FindNakedGroups(ref List<Deduction> deductions)
         {
+            // Goes from index 0 through 7 for the first Cell - Cell 8 will be compared with this first Cell
             for (int firstCellIndex = 0; firstCellIndex < _cells.Length - 1; ++firstCellIndex)
             {
+                // Check if the Cell is already solved
                 Cell firstCell = _cells[firstCellIndex];
                 if (firstCell.IsSolved())
                 {
                     continue;
                 }
                 
+                // Get first count
                 bool[] firstCellPossibilities = firstCell.PossibleValues;
                 int firstCount = Util.BoolArrayCount(firstCellPossibilities);
 
@@ -267,16 +270,18 @@ namespace DataTypes
                     continue;
                 }
                 
+                // Goes from the cell beyond the first to 8
                 for (int secondCellIndex = firstCellIndex + 1; secondCellIndex < _cells.Length; ++secondCellIndex)
                 {
+                    // Check if the Cell is already solved
                     Cell secondCell = _cells[secondCellIndex];
                     if (secondCell.IsSolved())
                     {
                         continue;
                     }
                     
+                    // Get first and second combined count
                     bool[] secondCellPossibilities = secondCell.PossibleValues;
-                    
                     bool[] cellPairValues = Util.BoolArrayOr(firstCellPossibilities, secondCellPossibilities);
                     int cellPairCount = Util.BoolArrayCount(cellPairValues);
 
@@ -309,14 +314,15 @@ namespace DataTypes
                     // Try to find a third cell for the possible group
                     for (int thirdCellIndex = secondCellIndex + 1; thirdCellIndex < _cells.Length; ++thirdCellIndex)
                     {
+                        // Check if the Cell is already solved
                         Cell thirdCell = _cells[thirdCellIndex];
                         if (thirdCell.IsSolved())
                         {
                             continue;
                         }
                     
+                        // Get first, second, and third combined count
                         bool[] thirdCellPossibilities = thirdCell.PossibleValues;
-                    
                         bool[] cellTripletValues = Util.BoolArrayOr(cellPairValues, thirdCellPossibilities);
                         int cellTripletCount = Util.BoolArrayCount(cellTripletValues);
                         
@@ -341,15 +347,29 @@ namespace DataTypes
 
         private void FindHiddenGroups(ref List<Deduction> deductions)
         {
+            // Get Value location map for the Area
+            Dictionary<Value, bool[]> valueLocationMap = new Dictionary<Value, bool[]>();
+            for (Value value = Value.One; value <= Value.Nine; ++value)
+            {
+                // Check if Value has already been solved within the Area
+                if (_solvedValues[(int)value - 1])
+                {
+                    continue;
+                }
+                
+                valueLocationMap.Add(value, GetValueLocations(value));
+            }
+            
+            // Goes One through Eight for the first Value - Nine will be compared with this first Value
             for (Value firstValue = Value.One; firstValue <= Value.Nine - 1; ++firstValue)
             {
                 // Check if Value has already been solved within the Area
-                if (_solvedValues[(int)firstValue - 1])
+                if (!valueLocationMap.TryGetValue(firstValue, out var firstValueLocations))
                 {
                     continue;
                 }
 
-                bool[] firstValueLocations = GetValueLocations(firstValue);
+                // Get first count
                 int firstCount = Util.BoolArrayCount(firstValueLocations);
 
                 // We're looking for Values with only up to 3 instances
@@ -358,16 +378,16 @@ namespace DataTypes
                     continue;
                 }
                 
+                // Goes from the value beyond the first to Nine
                 for (Value secondValue = firstValue + 1; secondValue <= Value.Nine; ++secondValue)
                 {
                     // Check if Value has already been solved within the Area
-                    if (_solvedValues[(int)secondValue - 1])
+                    if (!valueLocationMap.TryGetValue(secondValue, out var secondValueLocations))
                     {
                         continue;
                     }
                     
-                    bool[] secondValueLocations = GetValueLocations(secondValue);
-                    
+                    // Get first and second combined count
                     bool[] valuePairLocations = Util.BoolArrayOr(firstValueLocations, secondValueLocations);
                     int valuePairCount = Util.BoolArrayCount(valuePairLocations);
 
@@ -398,13 +418,12 @@ namespace DataTypes
                     for (Value thirdValue = secondValue + 1; thirdValue <= Value.Nine; ++thirdValue)
                     {
                         // Check if Value has already been solved within the Area
-                        if (_solvedValues[(int)thirdValue - 1])
+                        if (!valueLocationMap.TryGetValue(thirdValue, out var thirdValueLocations))
                         {
                             continue;
                         }
-                    
-                        bool[] thirdValueLocations = GetValueLocations(thirdValue);
                         
+                        // Get first, second, and third combined count
                         bool[] cellTripletLocations = Util.BoolArrayOr(valuePairLocations, thirdValueLocations);
                         int cellTripletCount = Util.BoolArrayCount(cellTripletLocations);
                         
