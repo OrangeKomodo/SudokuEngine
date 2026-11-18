@@ -27,10 +27,10 @@ namespace DataTypes
         public int UncertainCellCount => _uncertainCellCount;
     
         #endregion
-        
-        #region Public Functions
 
-        public void PopulateData(AreaType areaType, int areaIndex)
+        #region Constructors
+
+        public CellArea(AreaType areaType, int areaIndex)
         {
             _areaType = areaType;
             _areaIndex = areaIndex;
@@ -44,11 +44,29 @@ namespace DataTypes
             {
                 ++cellIndex;
             }
+
+            cell.OnStarterValueSet += OnCellValueSet;
+            cell.OnCellSolved += OnCellValueSet;
             
             _cells[cellIndex] = cell;
 
             ++_uncertainCellCount;
         }
+
+        ~CellArea()
+        {
+            for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
+            {
+                Cell cell = _cells[cellIndex];
+                
+                cell.OnStarterValueSet -= OnCellValueSet;
+                cell.OnCellSolved -= OnCellValueSet;
+            }
+        }
+
+        #endregion
+        
+        #region Public Functions
 
         public bool Is2DimensionalArea() => _areaType is AreaType.Square or AreaType.Custom;
 
@@ -61,15 +79,17 @@ namespace DataTypes
                     continue;
                 }
                 
-                _cells[cellIndex].SetValueImpossible(solvedValue);
+                _cells[cellIndex].ObliterateValue(solvedValue);
             }
 
             _solvedValues[(int)solvedValue - 1] = true;
             --_uncertainCellCount;
         }
 
-        public void MarkPointedToCells(List<Cell> groupedCells, Value pointerValue)
+        public bool MarkPointedToCells(List<Cell> groupedCells, Value pointerValue)
         {
+            bool changeOccurred = false;
+            
             for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
             {
                 Cell cell = _cells[cellIndex];
@@ -79,12 +99,16 @@ namespace DataTypes
                     continue;
                 }
                 
-                _cells[cellIndex].SetValueImpossible(pointerValue);
+                changeOccurred |= _cells[cellIndex].ObliterateValue(pointerValue);
             }
+
+            return changeOccurred;
         }
 
-        public void MarkGroupedCells(List<Cell> groupedCells, bool[] values)
+        public bool MarkGroupedCells(List<Cell> groupedCells, bool[] values)
         {
+            bool changeOccurred = false;
+
             for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
             {
                 Cell cell = _cells[cellIndex];
@@ -96,12 +120,14 @@ namespace DataTypes
                 
                 if (groupedCells.Contains(cell))
                 {
-                    cell.EliminatePossibilities(values);
+                    changeOccurred |= cell.SetAsOnlyPossibilities(values);
                     continue;
                 }
                 
-                cell.EliminatePossibilities(Util.BoolArrayNot(values));
+                changeOccurred |= cell.SetAsOnlyPossibilities(Util.BoolArrayNot(values));
             }
+
+            return changeOccurred;
         }
 
         public void FindSinglesInArea(ref List<Deduction> deductions)
@@ -158,7 +184,7 @@ namespace DataTypes
 
                 AreaType intersector = AreaType.None;
 
-                // No need for a for loop with so few possibilities
+                // No need for another loop with so few possibilities
                 if (valueInstanceCount == 2)
                 {
                     if (isTwoDArea && cells[0].RowIndex == cells[1].RowIndex)
@@ -225,6 +251,11 @@ namespace DataTypes
         #endregion
 
         #region Helper Functions
+
+        private void OnCellValueSet(Cell cell)
+        {
+            Obliterate(cell.CellValue);
+        }
 
         private void CreateGroupFromRemainingCells(ref List<Deduction> deductions)
         {

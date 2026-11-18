@@ -51,6 +51,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CellComponent
   CellText: {fileID: 211294008415438113}
+  PossibleValuesParent: {fileID: 3715990400953228093}
   PossibleValuesTexts:
   - {fileID: 6092462266829403862}
   - {fileID: 5080110249972748395}

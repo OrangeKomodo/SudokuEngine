@@ -1,25 +1,21 @@
-using Definitions;
+using System.Collections.Generic;
 
 namespace DataTypes
 {
     public class Group
     {
-        private Cell[] _cells;
-        private bool[] _groupedValues;
-        private AreaType _areaType;
+        private List<Cell> _cells;
 
-        public Group(Cell[] cells, bool[] groupedValues, AreaType areaType)
+        public Group(List<Cell> cells)
         {
-            if (cells.Length == 0 || groupedValues.Length == 0 || cells.Length != groupedValues.Length)
+            if (cells.Count == 0)
             {
                 return;
             }
 
             _cells = cells;
-            _groupedValues = groupedValues;
-            _areaType = areaType;
 
-            for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
+            for (int cellIndex = 0; cellIndex < _cells.Count; ++cellIndex)
             {
                 Cell cell = _cells[cellIndex];
 
@@ -28,13 +24,14 @@ namespace DataTypes
                     continue;
                 }
 
-                //cell.OnCellSolved += OnCellSolved;
+                cell.OnCellValueEliminated += OnCellUpdated;
+                cell.OnCellSolved += OnCellSolved;
             }
         }
 
         ~Group()
         {
-            for (int cellIndex = 0; cellIndex < _cells.Length; ++cellIndex)
+            for (int cellIndex = 0; cellIndex < _cells.Count; ++cellIndex)
             {
                 Cell cell = _cells[cellIndex];
 
@@ -43,13 +40,29 @@ namespace DataTypes
                     continue;
                 }
 
-                //cell.OnCellSolved -= OnCellSolved;
+                cell.OnCellValueEliminated -= OnCellUpdated;
+                cell.OnCellSolved -= OnCellSolved;
             }
         }
 
-        private void OnCellSolved(Value value)
+        private void OnCellUpdated(Cell cell)
         {
-            //TODO: If only two remaining cells in group, solve the other. If three remaining, remove the solved cell.  
+            
+        }
+
+        private void OnCellSolved(Cell cell)
+        {
+            cell.OnCellValueEliminated -= OnCellUpdated;
+            cell.OnCellSolved -= OnCellSolved;
+            
+            _cells.Remove(cell);
+
+            if (_cells.Count > 1)
+            {
+                return;
+            }
+            
+            // Resolve Group, and mark it for deletion
         }
     }
 }

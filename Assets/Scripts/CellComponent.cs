@@ -10,6 +10,7 @@ public class CellComponent : MonoBehaviour
     [SerializeField] private TMP_Text CellText;
     
     [Header("Notation Texts")]
+    [SerializeField] private GameObject PossibleValuesParent;
     [SerializeField] private GameObject[] PossibleValuesTexts; // <- It is imperative that these are in order in the Inspector
 
     private void Start()
@@ -31,6 +32,8 @@ public class CellComponent : MonoBehaviour
                 CellText.text = "";
                 CellText.color = Util.UncertainCharColor;
                 CellText.fontStyle = FontStyles.Normal;
+                PossibleValuesParent.SetActive(true);
+                
                 break;
             }
             case CellState.Solved:
@@ -38,6 +41,8 @@ public class CellComponent : MonoBehaviour
                 CellText.text = ((int)cell.CellValue).ToString();
                 CellText.color = Util.SolvedCharColor;
                 CellText.fontStyle = FontStyles.Normal;
+                PossibleValuesParent.SetActive(false);
+
                 break;
             }
             case CellState.Starter:
@@ -46,6 +51,8 @@ public class CellComponent : MonoBehaviour
                 CellText.text = ((int)cell.CellValue).ToString();
                 CellText.color = Util.StarterCharColor;
                 CellText.fontStyle = FontStyles.Bold;
+                PossibleValuesParent.SetActive(false);
+
                 break;
             }
         }

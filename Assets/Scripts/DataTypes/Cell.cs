@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DataTypes.Deductions;
 using Definitions;
@@ -36,7 +37,9 @@ namespace DataTypes
         public CellArea ColumnCellArea => _columnCellArea;
         public CellArea TwoDimensionalCellArea => _twoDimensionalCellArea;
 
-        //public Action<Value> OnCellSolved;
+        public Action<Cell> OnStarterValueSet;
+        public Action<Cell> OnCellValueEliminated;
+        public Action<Cell> OnCellSolved;
     
         #endregion
         
@@ -82,16 +85,62 @@ namespace DataTypes
             deductions.Add(deduction);
         }
 
-        public void SetValueImpossible(Value obliteratedNumber)
+        public bool ObliterateValue(Value obliteratedNumber)
         {
-            _possibleValues[(int)obliteratedNumber - 1] = false;
+            int numberIndex = (int)obliteratedNumber - 1;
+
+            // If no change occurred, make that known
+            if (!_possibleValues[numberIndex])
+            {
+                return false;
+            }
+            
+            _possibleValues[numberIndex] = false;
+            
+            OnCellValueEliminated?.Invoke(this);
+            return true;
         }
 
-        public void SetStarterValue(int starterNumber)
+        public bool SetAsOnlyPossibilities(bool[] newValues)
         {
-            SetValue((Value)starterNumber);
+            bool changeOccurred = false;
+            
+            for (int valueIndex = 0; valueIndex < _possibleValues.Length; ++valueIndex)
+            {
+                // If old value is already not possible, we don't care about it
+                if (!_possibleValues[valueIndex])
+                {
+                    continue;
+                }
+
+                // If old value is possible AND new value is still possible, we're not changing anything
+                if (newValues[valueIndex])
+                {
+                    continue;
+                }
+
+                // If old value is possible, and new value isn't, change the old value and mark it
+                changeOccurred = true;
+                _possibleValues[valueIndex] = false;
+            }
+
+            // If no change occurred, make that known
+            if (!changeOccurred)
+            {
+                return false;
+            }
+            
+            OnCellValueEliminated?.Invoke(this);
+            return true;
+        }
+
+        public void SetStarterValue(Value starterNumber)
+        {
+            SetValue(starterNumber);
             _state = CellState.Starter;
             _groupState = GroupState.Ungrouped;
+            
+            OnStarterValueSet?.Invoke(this);
         }
 
         public void SetSolvedValue(Value solvedNumber)
@@ -100,7 +149,7 @@ namespace DataTypes
             _state = CellState.Solved;
             _groupState = GroupState.Ungrouped;
 
-            //OnCellSolved.Invoke(solvedNumber);
+            OnCellSolved?.Invoke(this);
         }
 
         public void ResetSolvedValue()
@@ -115,11 +164,6 @@ namespace DataTypes
             _state = CellState.Uncertain;
             _groupState = GroupState.Ungrouped;
         }
-
-        public void EliminatePossibilities(bool[] newValues)
-        {
-            _possibleValues = Util.BoolArrayAnd(_possibleValues, newValues);
-        }
         
         #endregion
     
@@ -131,10 +175,6 @@ namespace DataTypes
 
             _possibleValues = new bool[] { false, false, false, false, false, false, false, false, false };
             _possibleValues[(int)number - 1] = true;
-        
-            _rowCellArea.Obliterate(number);
-            _columnCellArea.Obliterate(number);
-            _twoDimensionalCellArea.Obliterate(number);
         }
     
         #endregion
